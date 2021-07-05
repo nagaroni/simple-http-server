@@ -1,6 +1,4 @@
 use server::Server;
-use http::method::Method;
-use std::fmt::Display;
 
 mod http;
 mod server;
