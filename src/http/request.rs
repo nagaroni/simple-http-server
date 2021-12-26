@@ -3,11 +3,26 @@ use super::method::{ MethodError, Method };
 use std::convert::TryFrom;
 use std::error::Error;
 use std::fmt::{Display, Debug, Formatter, Result as FmtResult};
+use super::QueryString;
 
 pub struct Request<'buf> {
     pub path: &'buf str,
-    query_string: Option<&'buf str>,
+    query_string: Option<QueryString<'buf>>,
     method: Method
+}
+
+impl<'buf> Request<'buf> {
+    pub fn path(&self) -> &str {
+        &self.path
+    }
+
+    pub fn method(&self) -> &Method {
+        &self.method
+    }
+
+    pub fn query_string(&self) -> Option<&QueryString> {
+        self.query_string.as_ref()
+    }
 }
 
 impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
@@ -24,18 +39,18 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
             return Err(ParseError::InvalidProtocol);
         }
 
-				let method : Method = method.parse()?;
-				let mut query_string = None;
-				if let Some(i) = path.find('?') {
-					query_string = Some(&path[i + 1..]);
-					path = &path[..i];
-				}
+        let method : Method = method.parse()?;
+        let mut query_string = None;
+        if let Some(i) = path.find('?') {
+            query_string = Some(QueryString::from(&path[i + 1..]));
+            path = &path[..i];
+        }
 
-				Ok(Self {
-					path,
-					query_string,
-					method
-				})
+        Ok(Self {
+            path,
+            query_string,
+            method
+        })
     }
 }
 
@@ -49,14 +64,14 @@ fn get_next_word(request: &str) -> Option<(&str, &str)> {
 }
 
 impl From<MethodError> for ParseError {
-	fn from(_: MethodError) -> Self {
-		Self::InvalidMethod
-	}
+    fn from(_: MethodError) -> Self {
+        Self::InvalidMethod
+    }
 }
 
 impl From<Utf8Error> for ParseError {
     fn from(_: Utf8Error) -> Self {
-      Self::InvalidEncoding
+        Self::InvalidEncoding
     }
 }
 
